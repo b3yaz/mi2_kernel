@@ -27,6 +27,7 @@
 #include <asm/system_info.h>
 #include <asm/thread_notify.h>
 #include <asm/vfp.h>
+#include <asm/bug.h>
 
 #include "vfpinstr.h"
 #include "vfp.h"
@@ -715,6 +716,16 @@ void kernel_neon_end(void)
 EXPORT_SYMBOL(kernel_neon_end);
 
 #endif /* CONFIG_KERNEL_MODE_NEON */
+
+void vfp_kmode_exception(void)
+{
+	/*
+	 * Taking an FP exception in kernel mode is always a bug, because
+	 * none of the FP instructions currently supported in kernel mode
+	 * (i.e., NEON) should ever be bounced back to the support code.
+	 */
+	BUG_ON(fmrx(FPEXC) & FPEXC_EN);
+}
 
 /*
  * VFP support code initialisation.
