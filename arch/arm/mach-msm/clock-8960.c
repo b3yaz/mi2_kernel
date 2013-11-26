@@ -3532,7 +3532,7 @@ static struct clk_freq_tbl clk_tbl_gfx3d[] = {
 	F_GFX3D(266667000, pll2,  1,  3),
 	F_GFX3D(320000000, pll2,  2,  5),
 	F_GFX3D(400000000, pll2,  1,  2),
-	F_GFX3D(450000000, pll15, 1,  2),
+	F_GFX3D(500000000, pll15, 1,  2),
 	F_END
 };
 
@@ -3554,6 +3554,7 @@ static struct clk_freq_tbl clk_tbl_gfx3d_8960[] = {
 	F_GFX3D(300000000, pll3, 1,  4),
 	F_GFX3D(320000000, pll2, 2,  5),
 	F_GFX3D(400000000, pll2, 1,  2),
+	F_GFX3D(500000000, pll15, 1, 2),
 	F_END
 };
 
@@ -3581,14 +3582,14 @@ static struct clk_freq_tbl clk_tbl_gfx3d_8930ab[] = {
 
 static unsigned long fmax_gfx3d_8064ab[VDD_DIG_NUM] = {
 	[VDD_DIG_LOW]     = 128000000,
-	[VDD_DIG_NOMINAL] = 325000000,
+	[VDD_DIG_NOMINAL] = 320000000,
 	[VDD_DIG_HIGH]    = 450000000
 };
 
 static unsigned long fmax_gfx3d_8064[VDD_DIG_NUM] = {
 	[VDD_DIG_LOW]     = 128000000,
-	[VDD_DIG_NOMINAL] = 325000000,
-	[VDD_DIG_HIGH]    = 400000000
+	[VDD_DIG_NOMINAL] = 320000000,
+	[VDD_DIG_HIGH]    = 500000000
 };
 
 static unsigned long fmax_gfx3d_8930[VDD_DIG_NUM] = {
@@ -6336,7 +6337,7 @@ static struct pll_config pll4_config_393 __initdata = {
 	.main_output_mask = BIT(23),
 };
 
-static struct pll_config_regs pll15_regs __initdata = {
+static struct pll_config_regs pll15_regs = {
 	.l_reg = MM_PLL3_L_VAL_REG,
 	.m_reg = MM_PLL3_M_VAL_REG,
 	.n_reg = MM_PLL3_N_VAL_REG,
@@ -6344,8 +6345,8 @@ static struct pll_config_regs pll15_regs __initdata = {
 	.mode_reg = MM_PLL3_MODE_REG,
 };
 
-static struct pll_config pll15_config __initdata = {
-	.l = (0x24 | BVAL(31, 7, 0x620)),
+static struct pll_config pll15_config = {
+	.l = 0x24 | BVAL(31, 7, 0x620),
 	.m = 0x1,
 	.n = 0x9,
 	.vco_val = BVAL(17, 16, 0x2),
@@ -6571,7 +6572,10 @@ static void __init reg_init(void)
 	}
 
 	if (cpu_is_apq8064() || cpu_is_apq8064aa()) {
-		/* Program PLL15 to 975MHz with ref clk = 27MHz */
+		/* Program PLL15 to 1080MHz with ref clk = 27MHz */
+		pll15_config.l = 0x25 | BVAL(31, 7, 0x600);
+		pll15_config.m = 0x25;
+		pll15_config.n = 0x3E7;
 		configure_sr_pll(&pll15_config, &pll15_regs, 0);
 	} else if (cpu_is_apq8064ab()) {
 		/* Program PLL15 to 900MHZ */
@@ -6599,6 +6603,19 @@ static void __init reg_init(void)
 		/* Disable AUX and BIST outputs */
 		writel_relaxed(0, MM_PLL3_TEST_CTL_REG);
 	}
+}
+
+//GPU_OC
+
+extern void configure_pllOC(struct pll_config *config, struct pll_config_regs *regs, u32 ena_fsm_mode);
+
+void __ref SetGPUpll_config(u32 loc, unsigned long freq)
+{
+	pll15_config.l = (loc | BVAL(31, 7, 0x620));
+	pll15_config.m = 0x1;
+	pll15_config.n = 0x9;
+	configure_pllOC(&pll15_config, &pll15_regs, 0);
+	printk("Dynamic pll oc: set GPU OC %ld", freq / 1000000);
 }
 
 struct clock_init_data msm8960_clock_init_data __initdata;
@@ -6653,6 +6670,7 @@ static void __init msm8960_clock_pre_init(void)
 	 */
 	if (cpu_is_apq8064() || cpu_is_apq8064aa()) {
 		gfx3d_clk.c.fmax = fmax_gfx3d_8064;
+		pll15_clk.c.rate = 1000000000;
 	}
 	if (cpu_is_apq8064ab()) {
 		gfx3d_clk.c.fmax = fmax_gfx3d_8064ab;
