@@ -235,10 +235,6 @@ static int tz_init(struct kgsl_device *device, struct kgsl_pwrscale *pwrscale)
 {
 	struct tz_priv *priv;
 
-	gpu_stats.total_time_ms = 0;
-	gpu_stats.busy_time_ms = 0;
-	gpu_stats.threshold = 0;
-
 	priv = pwrscale->priv = kzalloc(sizeof(struct tz_priv), GFP_KERNEL);
 	if (pwrscale->priv == NULL)
 		return -ENOMEM;
