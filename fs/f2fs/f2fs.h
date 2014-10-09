@@ -197,15 +197,9 @@ static inline bool __has_cursum_space(struct f2fs_summary_block *sum, int size,
 #define F2FS_IOC_SETFLAGS		FS_IOC_SETFLAGS
 
 #define F2FS_IOCTL_MAGIC		0xf5
-#define F2FS_IOC_ATOMIC_WRITE	_IOW(F2FS_IOCTL_MAGIC, 1, struct atomic_w)
-#define F2FS_IOC_ATOMIC_COMMIT	_IOW(F2FS_IOCTL_MAGIC, 2, u64)
-
-struct atomic_w {
-	u64 aid;		/* atomic write id */
-	const char __user *buf;	/* user data */
-	u64 count;		/* size to update */
-	u64 pos;		/* file offset */
-};
+#define F2FS_IOC_START_ATOMIC_WRITE	_IO(F2FS_IOCTL_MAGIC, 1)
+#define F2FS_IOC_COMMIT_ATOMIC_WRITE	_IO(F2FS_IOCTL_MAGIC, 2)
+#define F2FS_IOC_START_VOLATILE_WRITE	_IO(F2FS_IOCTL_MAGIC, 3)
 
 #if defined(__KERNEL__) && defined(CONFIG_COMPAT)
 /*
@@ -276,7 +270,8 @@ struct f2fs_inode_info {
 	struct extent_info ext;		/* in-memory extent cache entry */
 	struct dir_inode_entry *dirty_dir;	/* the pointer of dirty dir */
 
-	struct list_head atomic_pages;	/* atomic page indexes */
+	struct list_head inmem_pages;	/* inmemory pages managed by f2fs */
+	struct mutex inmem_lock;	/* lock for inmemory pages */
 };
 
 static inline void get_extent_info(struct extent_info *ext,
@@ -1065,8 +1060,9 @@ enum {
 	FI_INLINE_DATA,		/* used for inline data*/
 	FI_APPEND_WRITE,	/* inode has appended data */
 	FI_UPDATE_WRITE,	/* inode has in-place-update data */
-	FI_NEED_IPU,		/* used for ipu for fdatasync */
-	FI_ATOMIC_FILE,		/* used for atomic writes support */
+	FI_NEED_IPU,		/* used for ipu per file */
+	FI_ATOMIC_FILE,		/* indicate atomic file */
+	FI_VOLATILE_FILE,	/* indicate volatile file */
 };
 
 static inline void set_inode_flag(struct f2fs_inode_info *fi, int flag)
@@ -1151,6 +1147,16 @@ static inline int inline_xattr_size(struct inode *inode)
 static inline int f2fs_has_inline_data(struct inode *inode)
 {
 	return is_inode_flag_set(F2FS_I(inode), FI_INLINE_DATA);
+}
+
+static inline bool f2fs_is_atomic_file(struct inode *inode)
+{
+	return is_inode_flag_set(F2FS_I(inode), FI_ATOMIC_FILE);
+}
+
+static inline bool f2fs_is_volatile_file(struct inode *inode)
+{
+	return is_inode_flag_set(F2FS_I(inode), FI_VOLATILE_FILE);
 }
 
 static inline void *inline_data_addr(struct page *page)
@@ -1295,8 +1301,8 @@ void destroy_node_manager_caches(void);
 /*
  * segment.c
  */
-void prepare_atomic_pages(struct inode *, struct atomic_w *);
-void commit_atomic_pages(struct inode *, u64, bool);
+void register_inmem_page(struct inode *, struct page *);
+void commit_inmem_pages(struct inode *, bool);
 void f2fs_balance_fs(struct f2fs_sb_info *);
 void f2fs_balance_fs_bg(struct f2fs_sb_info *);
 int f2fs_issue_flush(struct f2fs_sb_info *);
@@ -1378,7 +1384,6 @@ int f2fs_fiemap(struct inode *inode, struct fiemap_extent_info *, u64, u64);
 /*
  * gc.c
  */
-void move_data_page(struct inode *, struct page *, int);
 int start_gc_thread(struct f2fs_sb_info *);
 void stop_gc_thread(struct f2fs_sb_info *);
 block_t start_bidx_of_node(unsigned int, struct f2fs_inode_info *);
