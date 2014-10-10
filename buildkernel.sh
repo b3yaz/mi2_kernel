@@ -28,6 +28,7 @@ rm -rf $PACKAGEDIR/*
 echo "${txtbld} Setup Package Directory ${txtrst}"
 mkdir -p $PACKAGEDIR/system/lib/modules
 mkdir -p $PACKAGEDIR/system/etc/init.d
+mkdir -p $PACKAGEDIR/system/bin
 
 echo "${txtbld} Create initramfs dir ${txtrst}"
 mkdir -p $INITRAMFS_DEST
@@ -55,6 +56,9 @@ make -j9
 
 echo "${txtbld} Copy modules to Package ${txtrst} "
 cp -a $(find . -name *.ko -print |grep -v initramfs) $PACKAGEDIR/system/lib/modules
+
+echo "${txtbld} Copy khaon's mount script"
+cp mount_partitions_khaon.sh $PACKAGEDIR/system/bin
 
 echo "${txtbld} Copy scripts to init.d ${txtrst}"
 cp $KERNELDIR/frandom/00frandom $PACKAGEDIR/system/etc/init.d
