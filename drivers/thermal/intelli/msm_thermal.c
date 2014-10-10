@@ -39,7 +39,7 @@ struct msm_thermal_stat_data {
 };
 static struct msm_thermal_stat_data msm_thermal_stats;
 
-static int enabled;
+static int enabled = 1;
 static struct msm_thermal_data msm_thermal_info = {
 	.sensor_id = 5,
 	.poll_ms = DEFAULT_POLLING_MS,
