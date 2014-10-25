@@ -59,6 +59,11 @@ static inline void __set_bit_le(int nr, void *addr)
 	__set_bit(nr ^ BITOP_LE_SWIZZLE, addr);
 }
 
+static inline void clear_bit_le(int nr, void *addr)
+{
+	clear_bit(nr ^ BITOP_LE_SWIZZLE, addr);
+}
+
 static inline void __clear_bit_le(int nr, void *addr)
 {
 	__clear_bit(nr ^ BITOP_LE_SWIZZLE, addr);
