@@ -16,7 +16,7 @@ export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
 export INITRAMFS_SOURCE=/home/khaon/Documents/kernels/Ramdisks/AOSP_ARIES
 export PACKAGEDIR=/home/khaon/Documents/kernels/Packages/AOSP_Aries
-export META_INF=/home/khaon/Documents/kernels/Packages/META-INF/Aries/META-INF
+export META_INF=/home/khaon/kernels/zip_builders/Aries
 #Enable FIPS mode
 export USE_SEC_FIPS_MODE=true
 export ARCH=arm
@@ -73,11 +73,15 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	./mkbootimg --cmdline 'console=null androidboot.hardware=aries lpj=67677 user_debug=31 lge.kcal=0|0|0|x' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdiskaddr 0x82200000 --output $PACKAGEDIR/boot.img 
 	export curdate=`date "+%d-%m-%Y"`
 	cd $PACKAGEDIR
-	cp -R $META_INF .
+	cp -R $META_INF/* .
 	rm ramdisk.gz
 	rm zImage
 	rm ../khaon_kernel_aries*.zip
 	zip -r ../khaon_kernel_aries-$curdate.zip .
+  echo "${txtbld} Make build for TDB users ${txtrst}"
+  cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_khaon_userdata.sh
+  cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_ext4.sh
+	zip -r ../khaon_kernel_aries_tdb-$curdate.zip .
 	cd $KERNELDIR
 else
 	echo "KERNEL DID NOT BUILD! no zImage exist"
