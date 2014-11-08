@@ -69,6 +69,7 @@ repeat:
 		goto repeat;
 	}
 out:
+	mark_page_accessed(page);
 	return page;
 }
 
@@ -977,6 +978,9 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 	/* Here, we only have one bio having CP pack */
 	sync_meta_pages(sbi, META_FLUSH, LONG_MAX);
+
+	/* wait for previous submitted meta pages writeback */
+	wait_on_all_pages_writeback(sbi);
 
 	release_dirty_inode(sbi);
 
