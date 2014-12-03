@@ -203,10 +203,10 @@ go_write:
 		ret = f2fs_sync_fs(inode->i_sb, 1);
 
 		down_write(&fi->i_sem);
-		F2FS_I(inode)->xattr_ver = 0;
+		fi->xattr_ver = 0;
 		if (file_wrong_pino(inode) && inode->i_nlink == 1 &&
 					get_parent_ino(inode, &pino)) {
-			F2FS_I(inode)->i_pino = pino;
+			fi->i_pino = pino;
 			file_got_pino(inode);
 			up_write(&fi->i_sem);
 			mark_inode_dirty_sync(inode);
@@ -238,7 +238,7 @@ sync_nodes:
 flush_out:
 		remove_dirty_inode(sbi, ino, UPDATE_INO);
 		clear_inode_flag(fi, FI_UPDATE_WRITE);
-		ret = f2fs_issue_flush(F2FS_I_SB(inode));
+		ret = f2fs_issue_flush(sbi);
 	}
 out:
 	trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
@@ -493,8 +493,6 @@ int truncate_blocks(struct inode *inode, u64 from, bool lock)
 	}
 
 	if (f2fs_has_inline_data(inode)) {
-		truncate_inline_data(ipage, from);
-		update_inode(inode, ipage);
 		f2fs_put_page(ipage, 1);
 		goto out;
 	}
@@ -520,13 +518,13 @@ int truncate_blocks(struct inode *inode, u64 from, bool lock)
 	f2fs_put_dnode(&dn);
 free_next:
 	err = truncate_inode_blocks(inode, free_from);
+out:
+	if (lock)
+		f2fs_unlock_op(sbi);
 
 	/* lastly zero out the first data page */
 	if (!err)
 		err = truncate_partial_data_page(inode, from);
-out:
-	if (lock)
-		f2fs_unlock_op(sbi);
 
 	trace_f2fs_truncate_blocks_exit(inode, err);
 	return err;
@@ -539,6 +537,12 @@ void f2fs_truncate(struct inode *inode)
 		return;
 
 	trace_f2fs_truncate(inode);
+
+	/* we should check inline_data size */
+	if (f2fs_has_inline_data(inode) && !f2fs_may_inline(inode)) {
+		if (f2fs_convert_inline_inode(inode))
+			return;
+	}
 
 	if (!truncate_blocks(inode, i_size_read(inode), true)) {
 		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
