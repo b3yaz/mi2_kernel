@@ -30,20 +30,6 @@ mkdir -p $PACKAGEDIR/system/lib/modules
 mkdir -p $PACKAGEDIR/system/etc/init.d
 mkdir -p $PACKAGEDIR/system/bin
 
-echo "${txtbld} Create initramfs dir ${txtrst}"
-mkdir -p $INITRAMFS_DEST
-
-echo "${txtbld} Remove old initramfs dir ${txtrst}"
-rm -rf $INITRAMFS_DEST/*
-
-echo "${txtbld} Copy new initramfs dir ${txtrst}"
-cp -R $INITRAMFS_SOURCE/* $INITRAMFS_DEST
-
-echo "${txtbld} chmod initramfs dir ${txtrst}"
-chmod -R g-w $INITRAMFS_DEST/*
-rm $(find $INITRAMFS_DEST -name EMPTY_DIRECTORY -print)
-rm -rf $(find $INITRAMFS_DEST -name .git -print)
-
 echo "${txtbld} Remove old zImage ${txtrst}"
 make mrproper
 rm $PACKAGEDIR/zImage
