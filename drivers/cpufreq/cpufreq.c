@@ -1169,7 +1169,7 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
 	 */
 	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
 
-	policy->user_policy.min = policy->min;
+	policy->user_policy.min = 384000;
 	policy->user_policy.max = 1728000;
 
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
