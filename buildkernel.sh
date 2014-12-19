@@ -13,9 +13,8 @@ txtrst=$(tput sgr0) # Reset
 
 export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
-export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
 export INITRAMFS_SOURCE=/home/khaon/Documents/kernels/Ramdisks/AOSP_ARIES
-export PACKAGEDIR=/home/khaon/Documents/kernels/Packages/AOSP_Aries
+export PACKAGEDIR=/home/khaon/Documents/kernels/Packages/AOSP_ARIES
 export META_INF=/home/khaon/kernels/zip_builders/Aries
 #Enable FIPS mode
 export USE_SEC_FIPS_MODE=true
@@ -56,7 +55,7 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	cp arch/arm/boot/zImage $PACKAGEDIR/zImage
 
 	echo "Make boot.img"
-	./mkbootfs $INITRAMFS_DEST | gzip > $PACKAGEDIR/ramdisk.gz
+	./mkbootfs $INITRAMFS_SOURCE | lz4c -9 > $PACKAGEDIR/ramdisk.gz
 	./mkbootimg --cmdline 'console=null androidboot.hardware=aries lpj=67677 user_debug=31 lge.kcal=0|0|0|x' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdiskaddr 0x82200000 --output $PACKAGEDIR/boot.img 
 	export curdate=`date "+%d-%m-%Y"`
 	cd $PACKAGEDIR
