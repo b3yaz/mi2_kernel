@@ -44,7 +44,8 @@ echo "${txtbld} Copy modules to Package ${txtrst} "
 cp -a $(find . -name *.ko -print |grep -v initramfs) $PACKAGEDIR/system/lib/modules
 
 echo "${txtbld} Copy khaon's mount script"
-cp mount_khaon_userdata.sh $PACKAGEDIR/system/bin
+cp mount_khaon_userdata.sh $PACKAGEDIR/system/bin/mount_ext4.sh
+cp mount_khaon_userdata.sh $PACKAGEDIR/system/bin/mount_khaon_userdata.sh
 
 echo "${txtbld} Copy scripts to init.d ${txtrst}"
 cp $KERNELDIR/frandom/00frandom $PACKAGEDIR/system/etc/init.d
