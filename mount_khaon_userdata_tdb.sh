@@ -24,14 +24,20 @@ if [ "${MOUNT_POINT}" == "/storage_int" ]; then
 fi
 
 # Determine userdata's fs type and set mount options accordingly
-BLOCK_NODE="$(busybox readlink -f ${BLOCK_DEVICE})"
-DATA=`/sbin/blkid ${BLOCK_NODE} | grep "f2fs"`
-if [ "${DATA}" != "" ]; then
-  FS_TYPE=f2fs
-  OPTS=rw,noatime,nosuid,nodev,discard,nodiratime,inline_xattr,inline_data,flush_merge
-else
-  FS_TYPE=ext4
-  OPTS=noatime,nosuid,nodev,barrier=1,noauto_da_alloc
+BLOCK_NODE="$(/sbin/busybox readlink -f ${BLOCK_DEVICE})"
+
+# check partition filesystem
+getfs() { /sbin/busybox blkid $1 | /sbin/busybox cut -d\" -f4; }
+
+# mount partition
+if [ -e ${BLOCK_DEVICE} ]; then
+	if [ `getfs ${BLOCK_NODE}` == "f2fs" ]; then  
+      FS_TYPE=f2fs
+      OPTS=rw,noatime,nosuid,nodev,discard,nodiratime,inline_xattr,inline_data,flush_merge
+	else		 
+      FS_TYPE=ext4
+      OPTS=noatime,nosuid,nodev,barrier=1,noauto_da_alloc
+	fi;
 fi
 
 # mount partition
