@@ -55,7 +55,7 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	cp arch/arm/boot/zImage $PACKAGEDIR/zImage
 
 	echo "Make boot.img"
-	./mkbootfs $INITRAMFS_SOURCE | lz4c -9 > $PACKAGEDIR/ramdisk.gz
+	./mkbootfs $INITRAMFS_SOURCE | lz4c -hc -l > $PACKAGEDIR/ramdisk.gz
 	./mkbootimg --cmdline 'console=null androidboot.hardware=aries lpj=67677 user_debug=31 lge.kcal=0|0|0|x' --kernel $PACKAGEDIR/zImage --ramdisk $PACKAGEDIR/ramdisk.gz --base 0x80200000 --pagesize 2048 --ramdiskaddr 0x82200000 --output $PACKAGEDIR/boot.img 
 	export curdate=`date "+%d-%m-%Y"`
 	cd $PACKAGEDIR
