@@ -15,7 +15,7 @@ export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_DEST=$KERNELDIR/kernel/usr/initramfs
 export INITRAMFS_SOURCE=/home/khaon/Documents/kernels/Ramdisks/AOSP_ARIES
-export PACKAGEDIR=/home/khaon/Documents/kernels/Packages/AOSP_Aries
+export PACKAGEDIR=/home/khaon/Documents/kernels/Packages
 export META_INF=/home/khaon/kernels/zip_builders/Aries
 export ANY_KERNEL=/home/khaon/kernels/AnyKernel2
 #Enable FIPS mode
@@ -25,7 +25,6 @@ export CROSS_COMPILE=/home/khaon/Documents/toolchains/arm-cortex_a15-linux-gnuea
 
 echo "${txtbld} Remove old zImage ${txtrst}"
 make mrproper
-rm $PACKAGEDIR/zImage
 rm arch/arm/boot/zImage
 
 echo "${bldblu} Make the kernel ${txtrst}"
@@ -38,13 +37,14 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	echo "Making any kernel flashable zip"
 
   export curdate=`date "+%m-%d-%Y"`
-  rm ../UPDATE-AnyKernel2-khaon-kernel-aries-*.zip
+
+  rm $PACKAGEDIR/UPDATE-AnyKernel2-khaon-kernel-aries-*.zip
 
   cd $ANY_KERNEL;
-  git reset --hard;git clean -fdx;git checkout origin/aries;
+  git reset --hard;git clean -fdx;git checkout aries;
 	cp $KERNELDIR/arch/arm/boot/zImage zImage
 
-  zip -r9 $PACKAGEDIR/../UPDATE-AnyKernel2-khaon-kernel-aries-"${curdate}".zip * -x README UPDATE-AnyKernel2.zip .git *~
+  zip -r9 $PACKAGEDIR/UPDATE-AnyKernel2-khaon-kernel-aries-"${curdate}".zip * -x README UPDATE-AnyKernel2.zip .git *~
 
 	cd $KERNELDIR
 else
