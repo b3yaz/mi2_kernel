@@ -14,6 +14,7 @@ txtrst=$(tput sgr0) # Reset
 export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export INITRAMFS_SOURCE=/home/khaon/Documents/kernels/Ramdisks/AOSP_ARIES
+export ANY_KERNEL=/home/khaon/kernels/AnyKernel2
 export PACKAGEDIR=/home/khaon/Documents/kernels/Packages/AOSP_ARIES
 export META_INF=/home/khaon/kernels/zip_builders/Aries
 #Enable FIPS mode
@@ -63,11 +64,19 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	rm ramdisk.gz
 	rm zImage
 	rm ../khaon_kernel_aries*.zip
+	rm ../UPDATE-AnyKernel2-khaon-kernel-aries-cm11*
 	zip -r ../khaon_kernel_aries-$curdate.zip .
-  echo "${txtbld} Make build for TDB users ${txtrst}"
-  cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_khaon_userdata.sh
-  cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_ext4.sh
+	echo "${txtbld} Make build for TDB users ${txtrst}"
+	cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_khaon_userdata.sh
+	cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_ext4.sh
 	zip -r ../khaon_kernel_aries_tdb-$curdate.zip .
+
+	echo "${txtbld} Make AnyKernel solution${txtrst}"
+	cd $ANY_KERNEL;
+  	git reset --hard;git clean -fdx;git checkout aries-cm11;
+	cp $KERNELDIR/arch/arm/boot/zImage zImage
+
+ 	zip -r9 $PACKAGEDIR/../UPDATE-AnyKernel2-khaon-kernel-aries-cm11-"${curdate}".zip * -x README UPDATE-AnyKernel2.zip .git *~
 	cd $KERNELDIR
 else
 	echo "KERNEL DID NOT BUILD! no zImage exist"
