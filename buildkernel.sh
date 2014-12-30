@@ -64,7 +64,7 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
 	rm ramdisk.gz
 	rm zImage
 	rm ../khaon_kernel_aries*.zip
-	rm ../UPDATE-AnyKernel2-khaon-kernel-aries-cm11*
+	rm ../UPDATE-AnyKernel2-khaon-kernel-aries-kitkat*
 	zip -r ../khaon_kernel_aries-$curdate.zip .
 	echo "${txtbld} Make build for TDB users ${txtrst}"
 	cp $KERNELDIR/mount_khaon_userdata_tdb.sh $PACKAGEDIR/system/bin/mount_khaon_userdata.sh
@@ -76,7 +76,7 @@ if [ -e $KERNELDIR/arch/arm/boot/zImage ]; then
   	git reset --hard;git clean -fdx;git checkout aries-cm11;
 	cp $KERNELDIR/arch/arm/boot/zImage zImage
 
- 	zip -r9 $PACKAGEDIR/../UPDATE-AnyKernel2-khaon-kernel-aries-cm11-"${curdate}".zip * -x README UPDATE-AnyKernel2.zip .git *~
+ 	zip -r9 $PACKAGEDIR/../UPDATE-AnyKernel2-khaon-kernel-aries-kitkat-"${curdate}".zip * -x README UPDATE-AnyKernel2.zip .git *~
 	cd $KERNELDIR
 else
 	echo "KERNEL DID NOT BUILD! no zImage exist"
