@@ -374,8 +374,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -O3 \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-deprecated-declarations -Wno-maybe-uninitialized -Wno-array-bounds -Wno-sizeof-pointer-memaccess \
-		   -fno-delete-null-pointer-checks \
-		   -marm -fgraphite -ftree-loop-linear -floop-strip-mine -fgraphite-identity -floop-parallelize-all -floop-interchange -ftree-loop-distribution -floop-block
+		   -fno-delete-null-pointer-checks
+		   
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__ -O3
