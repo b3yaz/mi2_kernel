@@ -394,6 +394,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 	cpu_load = loadadjfreq / pcpu->target_freq;
 	pcpu->prev_load = cpu_load;
 	boosted = boost_val || now < boostpulse_endtime;
+	
+	cpufreq_notify_utilization(pcpu->policy, cpu_load);
 
 	if (counter < 5) {
 		counter++;

@@ -1069,6 +1069,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	avg_load = avg_load / num_of_cpus;
 	max_load = max_load / num_of_cpus;
+	
+	cpufreq_notify_utilization(policy, max_load);
 
 	if (max_load > avg_load)
 		avg_load_freq = (avg_load + max_load) / 2 * policy->cur;
