@@ -22,6 +22,7 @@
 #include <linux/user.h>
 #include <linux/proc_fs.h>
 #include <linux/export.h>
+
 #include <asm/cp15.h>
 #include <asm/cputype.h>
 #include <asm/system_info.h>
@@ -686,8 +687,12 @@ void kernel_neon_begin(void)
 	unsigned int cpu;
 	u32 fpexc;
 
-	/* Avoid using the NEON in interrupt context */
-	might_sleep();
+	/*
+	 * Kernel mode NEON is only allowed outside of interrupt context
+	 * with preemption disabled. This will make sure that the kernel
+	 * mode NEON register contents never need to be preserved.
+	 */
+	BUG_ON(in_interrupt());
 	cpu = get_cpu();
 
 	fpexc = fmrx(FPEXC) | FPEXC_EN;
@@ -716,16 +721,6 @@ void kernel_neon_end(void)
 EXPORT_SYMBOL(kernel_neon_end);
 
 #endif /* CONFIG_KERNEL_MODE_NEON */
-
-void vfp_kmode_exception(void)
-{
-	/*
-	 * Taking an FP exception in kernel mode is always a bug, because
-	 * none of the FP instructions currently supported in kernel mode
-	 * (i.e., NEON) should ever be bounced back to the support code.
-	 */
-	BUG_ON(fmrx(FPEXC) & FPEXC_EN);
-}
 
 /*
  * VFP support code initialisation.
