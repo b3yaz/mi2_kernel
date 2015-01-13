@@ -36,8 +36,8 @@ static struct hfpll_data hfpll_data __initdata = {
 	.nom_vdd_l_max = 42,
 	.vdd[HFPLL_VDD_NONE] =       0,
 	.vdd[HFPLL_VDD_LOW]  =  945000,
-	.vdd[HFPLL_VDD_NOM]  = 1050000,
-	.vdd[HFPLL_VDD_HIGH] = 1150000,
+	.vdd[HFPLL_VDD_NOM]  = 1100000,
+	.vdd[HFPLL_VDD_HIGH] = 1200000,
 };
 
 static struct scalable scalable[] __initdata = {
@@ -52,8 +52,8 @@ static struct scalable scalable[] __initdata = {
 #else
 		.vreg[VREG_CORE] = { "krait0", 1300000 },
 #endif
-		.vreg[VREG_MEM]  = { "krait0_mem", 1225000 },
-		.vreg[VREG_DIG]  = { "krait0_dig", 1225000 },
+		.vreg[VREG_MEM]  = { "krait0_mem", 1200000 },
+		.vreg[VREG_DIG]  = { "krait0_dig", 1200000 },
 		.vreg[VREG_HFPLL_A] = { "krait0_hfpll", 1800000 },
 	},
 	[CPU1] = {
@@ -67,8 +67,8 @@ static struct scalable scalable[] __initdata = {
 #else
 		.vreg[VREG_CORE] = { "krait1", 1300000 },
 #endif
-		.vreg[VREG_MEM]  = { "krait1_mem", 1225000 },
-		.vreg[VREG_DIG]  = { "krait1_dig", 1225000 },
+		.vreg[VREG_MEM]  = { "krait1_mem", 1200000 },
+		.vreg[VREG_DIG]  = { "krait1_dig", 1200000 },
 		.vreg[VREG_HFPLL_A] = { "krait1_hfpll", 1800000 },
 	},
 	[CPU2] = {
@@ -82,8 +82,8 @@ static struct scalable scalable[] __initdata = {
 #else
 		.vreg[VREG_CORE] = { "krait2", 1300000 },
 #endif
-		.vreg[VREG_MEM]  = { "krait2_mem", 1225000 },
-		.vreg[VREG_DIG]  = { "krait2_dig", 1225000 },
+		.vreg[VREG_MEM]  = { "krait2_mem", 1200000 },
+		.vreg[VREG_DIG]  = { "krait2_dig", 1200000 },
 		.vreg[VREG_HFPLL_A] = { "krait2_hfpll", 1800000 },
 	},
 	[CPU3] = {
@@ -97,8 +97,8 @@ static struct scalable scalable[] __initdata = {
 #else
 		.vreg[VREG_CORE] = { "krait3", 1300000 },
 #endif
-		.vreg[VREG_MEM]  = { "krait3_mem", 1225000 },
-		.vreg[VREG_DIG]  = { "krait3_dig", 1225000 },
+		.vreg[VREG_MEM]  = { "krait3_mem", 1200000 },
+		.vreg[VREG_DIG]  = { "krait3_dig", 1200000 },
 		.vreg[VREG_HFPLL_A] = { "krait3_hfpll", 1800000 },
 	},
 	[L2] = {
@@ -148,7 +148,7 @@ static struct l2_level l2_freq_tbl[] __initdata = {
 	[12] = { { 1026000, HFPLL, 1, 0x26 }, 1150000, 1150000, 5 },
 	[13] = { { 1080000, HFPLL, 1, 0x28 }, 1150000, 1150000, 5 },
 	[14] = { { 1134000, HFPLL, 1, 0x2A }, 1150000, 1150000, 5 },
-	[15] = { { 1188000, HFPLL, 1, 0x2C }, 1150000, 1150000, 5 },
+	[15] = { { 1188000, HFPLL, 1, 0x2C }, 1250000, 1200000, 6 },
 	[16] = { { 1242000, HFPLL, 1, 0x2E }, 1300000, 1300000, 6 },
 	[17] = { { 1296000, HFPLL, 1, 0x30 }, 1300000, 1300000, 6 },
 	{ }
