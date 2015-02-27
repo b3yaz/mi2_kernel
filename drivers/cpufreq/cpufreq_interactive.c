@@ -116,7 +116,7 @@ static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
 /* Non-zero means indefinite speed boost active */
 static int boost_val;
 /* Duration of a boot pulse in usecs */
-static int boostpulse_duration_val = 4 * DEFAULT_MIN_SAMPLE_TIME;
+static int boostpulse_duration_val = 200000;
 #define DEFAULT_INPUT_BOOST_FREQ 1134000
 int input_boost_freq = DEFAULT_INPUT_BOOST_FREQ;
 
