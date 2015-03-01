@@ -28,6 +28,7 @@
 #include <linux/input.h>
 #include <linux/jiffies.h>
 #include <linux/earlysuspend.h>
+#include <linux/intelli_plug.h>
 
 #define MAKO_HOTPLUG "mako_hotplug"
 
@@ -208,6 +209,9 @@ static void cpu_smash(void)
 static void __ref decide_hotplug_func(struct work_struct *work)
 {
     struct hotplug_tunables *t = &tunables;
+
+    if (is_intelli_plug_enabled())
+		t->mako_hotplug_enabled = false;
 
     if(t->mako_hotplug_enabled) {
 
@@ -404,9 +408,12 @@ static ssize_t mako_hotplug_enabled_store(struct device *dev,
 	if (!t->mako_hotplug_enabled)
 		queue_delayed_work_on(0, wq, &decide_hotplug,
 		msecs_to_jiffies(t->timer * HZ * 500 ));
-	else
+	else {
 		queue_delayed_work_on(0, wq, &decide_hotplug,
 		msecs_to_jiffies(t->timer * HZ));
+		// Make sure to disable faux's hotplug
+		disable_intelli_plug();
+	}
 		
 	cpus_online_work();		
 	

@@ -199,6 +199,15 @@ static unsigned int calculate_thread_stats(void)
 	return nr_run;
 }
 
+inline void disable_intelli_plug(void)
+{
+	intelli_plug_active = false;
+}
+
+inline bool is_intelli_plug_enabled(void) {
+	return intelli_plug_active;
+}
+
 static void __ref intelli_plug_boost_fn(struct work_struct *work)
 {
 
