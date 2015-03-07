@@ -40,34 +40,22 @@
 #define DEFAULT_MIN_TIME_CPU_ONLINE 1
 #define DEFAULT_TIMER 1
 
-#define MIN_CPU_UP_US (1000 * USEC_PER_MSEC)
+#define MIN_CPU_UP_US (200 * USEC_PER_MSEC)
 #define NUM_POSSIBLE_CPUS num_possible_cpus()
-#define HIGH_LOAD (90 << 1)
-#define MAX_FREQ_CAP 918000
+#define HIGH_LOAD (95)
 
 struct cpu_stats {
 	unsigned int counter;
-	struct notifier_block notif;
 	u64 timestamp;
-	uint32_t freq;
-	uint32_t saved_freq;
-	bool screen_cap_lock;
-	bool suspend;
-	bool booted;
 } stats = {
 	.counter = 0,
 	.timestamp = 0,
-	.freq = 0,
-	.screen_cap_lock = false,
-	.suspend = false,
-	.booted = false,
 };
-
 
 struct hotplug_tunables {
     /*
-     * enable or disable mako_hotplug
-     */
+    * enable or disable mako_hotplug
+    */
     bool mako_hotplug_enabled;
 
 	/*
@@ -114,7 +102,7 @@ static struct workqueue_struct *wq;
 static struct delayed_work decide_hotplug;
 static struct work_struct suspend, resume;
 
-static void __ref cpus_online_work(void)
+static inline void cpus_online_work(void)
 {
 	unsigned int cpu;
 
@@ -149,21 +137,27 @@ static inline bool cpus_cpufreq_work(void)
 	for (cpu = 2; cpu < 4; cpu++)
 		current_freq += cpufreq_quick_get(cpu);
 
-	return (current_freq >> 1) >= t->cpufreq_unplug_limit;
+	current_freq >>= 1;
+
+	return current_freq >= t->cpufreq_unplug_limit;
 }
 
 static void cpu_revive(unsigned int load)
 {
 	struct hotplug_tunables *t = &tunables;
+	unsigned int counter_hysteria = 3;
+
+	if (unlikely(nr_running() >= 10))
+		goto online_all;
 
 	/*
 	 * we should care about a very high load spike and online the
-	 * cpu in question. If the device is under stress for at least 200ms
-	 * online the cpu, no questions asked. 200ms here equals two samples
+	 * cpus in question. If the device is under stress for at least 300ms
+	 * online all cores, no questions asked. 300ms here equals three samples
 	 */
-	if (load >= HIGH_LOAD && stats.counter >= 2)
+	if (load >= HIGH_LOAD && stats.counter >= counter_hysteria)
 		goto online_all;
-	else if (!(stats.counter >= t->high_load_counter))
+	else if (stats.counter < t->high_load_counter)
 		return;
 
 online_all:
@@ -171,7 +165,7 @@ online_all:
 	stats.timestamp = ktime_to_us(ktime_get());
 }
 
-static void cpu_smash(void)
+static void cpu_smash(unsigned int load)
 {
 	struct hotplug_tunables *t = &tunables;
 	u64 extra_time = MIN_CPU_UP_US;
@@ -189,13 +183,20 @@ static void cpu_smash(void)
 
 	/*
 	 * Let's not unplug this cpu unless its been online for longer than
-	 * 1sec to avoid consecutive ups and downs if the load is varying
+	 * 500ms to avoid consecutive ups and downs if the load is varying
 	 * closer to the threshold point.
 	 */
 	if (t->min_time_cpu_online > 1)
 		extra_time = t->min_time_cpu_online * MIN_CPU_UP_US;
 
 	if (ktime_to_us(ktime_get()) < stats.timestamp + extra_time)
+		return;
+
+	/*
+	 * If current load is higher than our threshold we can skip offlining
+	 * on the next sample
+	 */
+	if (load >= t->load_threshold)
 		return;
 
 	cpus_offline_work();
@@ -208,158 +209,64 @@ static void cpu_smash(void)
 
 static void __ref decide_hotplug_func(struct work_struct *work)
 {
-    struct hotplug_tunables *t = &tunables;
-
-    if (is_intelli_plug_enabled())
+	struct hotplug_tunables *t = &tunables;
+	unsigned long cur_load = 0;
+	unsigned int cpu;
+	unsigned int online_cpus = num_online_cpus();
+	
+	if (is_intelli_plug_enabled())
 		t->mako_hotplug_enabled = false;
+		
+	if(t->mako_hotplug_enabled) {
+		/*
+		 * reschedule early when the user doesn't want more than 2 cores online
+		 */
+		if (unlikely(t->load_threshold == 100 && online_cpus == 2))
+			goto reschedule;
 
-    if(t->mako_hotplug_enabled) {
+		/*
+		 * reschedule early when users desire to run with all cores online
+		 */
+		if (unlikely(!t->load_threshold &&
+				online_cpus == NUM_POSSIBLE_CPUS)) {
+			goto reschedule;
+		}
 
-	    unsigned long cur_load = 0;
-	    unsigned int cpu;
-	    unsigned int online_cpus = num_online_cpus();
+		for (cpu = 0; cpu < 2; cpu++)
+			cur_load += cpufreq_quick_get_util(cpu);
 
-	    /*
-	     * reschedule early when the system has woken up from the FREEZER
-	     * but the display is not on
-	     */
-	    if (unlikely(online_cpus == 1) || stats.suspend)
-		    goto reschedule;
+		cur_load >>= 1;
 
-	    /*
-	     * reschedule early when the user doesn't want more than 2 cores online
-	     */
-	    if (unlikely(t->load_threshold == 100 && online_cpus == 2))
-		    goto reschedule;
+		if (cur_load >= t->load_threshold) {
+			if (stats.counter < t->max_load_counter)
+				++stats.counter;
 
-	    /*
-	     * reschedule early when users desire to run with all cores online
-	     */
-	    if (unlikely(!t->load_threshold &&
-			    online_cpus == NUM_POSSIBLE_CPUS)) {
-		    goto reschedule;
-	    }
+			if (online_cpus <= 2)
+				cpu_revive(cur_load);
+		} else {
+			if (stats.counter)
+				--stats.counter;
 
-	    for (cpu = 0; cpu < 2; cpu++)
-		    cur_load += cpufreq_quick_get_util(cpu);
-
-	    if (cur_load >= (t->load_threshold << 1)) {
-		    if (stats.counter < t->max_load_counter)
-			    ++stats.counter;
-
-		    if (online_cpus <= 2)
-			    cpu_revive(cur_load);
-	    } else {
-		    if (stats.counter)
-			    --stats.counter;
-
-		    if (online_cpus > 2)
-			    cpu_smash();
-	    }
+			if (online_cpus > 2)
+				cpu_smash(cur_load);
+		}
 	}
+
 reschedule:
 	queue_delayed_work_on(0, wq, &decide_hotplug,
 		msecs_to_jiffies(t->timer * HZ));
 }
 
-static int cpufreq_callback(struct notifier_block *nfb,
-		unsigned long event, void *data)
-{
-	struct cpufreq_policy *policy = data;
-
-	if (event != CPUFREQ_ADJUST || !stats.screen_cap_lock)
-		return 0;
-
-	cpufreq_verify_within_limits(policy,
-		policy->cpuinfo.min_freq,
-		stats.freq);
-
-	pr_info("CPU%d -> %d\n", policy->cpu, policy->max);
-
-	return 0;
-}
-
-static struct notifier_block cpufreq_notifier = {
-	.notifier_call = cpufreq_callback,
-};
-
-static void screen_off_max_freq(int cpu, bool lower_max_freq)
-{
-	stats.freq = lower_max_freq ? MAX_FREQ_CAP : stats.saved_freq;
-
-	/*
-	 * This can be 0 on bootup if policy->max is not yet set
-	 */
-	if (!stats.freq)
-		stats.freq = LONG_MAX;
-
-	/*
-	 * Making sure the screen on max frequency limit is actually unlocked
-	 * and not left in a state where in some cases cpu1 gets stuck in
-	 * MAX_FREQ_CAP for some reason that I cannot reproduce
-	 * If you can reproduce it contact me (/proc/kmsg shows the log for that)
-	 */
-	if (!lower_max_freq) {
-		if (stats.freq <= MAX_FREQ_CAP)
-			stats.freq = LONG_MAX;
-	}
-
-	cpufreq_update_policy(cpu);
-}
-
 static void mako_hotplug_suspend(struct work_struct *work)
 {
-	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
-	int cpu;
-
-	/*
-	 * Save the current max freq before capping it to 1GHz
-	 * so that we can restore it after screen on.
-	 * TODO: More tests for thermal throttle cases
-	 */
-	if (!policy)
-		stats.saved_freq = LONG_MAX;
-	else
-		stats.saved_freq = policy->max;
-
-	/*
-         * Simple lock not for concurrent accesses, but to prevent
-         * the notifier to trigger a policy limits verify unless we
-         * requested it
-         */
-        stats.screen_cap_lock = true;
-	for_each_online_cpu(cpu) {
-		if (cpu < 2) {
-			screen_off_max_freq(cpu, true);
-			continue;
-		}
-
-		cpu_down(cpu);
-	}
-	stats.screen_cap_lock = false;
-
-	stats.counter = 0;
-	stats.suspend = true;
+	cpus_offline_work();
 
 	pr_info("%s: suspend\n", MAKO_HOTPLUG);
 }
 
 static void __ref mako_hotplug_resume(struct work_struct *work)
 {
-	int cpu;
-
-	stats.screen_cap_lock = true;
-	for_each_possible_cpu(cpu) {
-		if (cpu_online(cpu)) {
-			screen_off_max_freq(cpu, false);
-			continue;
-		}
-
-		cpu_up(cpu);
-	}
-	stats.screen_cap_lock = false;
-
-	stats.suspend = false;
+	cpus_online_work();
 
 	pr_info("%s: resume\n", MAKO_HOTPLUG);
 }
@@ -384,7 +291,6 @@ static struct early_suspend early_suspend =
 /*
  * Sysfs get/set entries start
  */
-
 static ssize_t mako_hotplug_enabled_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -419,6 +325,7 @@ static ssize_t mako_hotplug_enabled_store(struct device *dev,
 	
 	return size;
 }
+
 
 static ssize_t load_threshold_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -563,6 +470,7 @@ static ssize_t timer_store(struct device *dev, struct device_attribute *attr,
 
 	return size;
 }
+
 static DEVICE_ATTR(mako_hotplug_enabled, 0664, mako_hotplug_enabled_show,
 		mako_hotplug_enabled_store);
 static DEVICE_ATTR(load_threshold, 0664, load_threshold_show,
@@ -634,17 +542,13 @@ static int __devinit mako_hotplug_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	register_early_suspend(&early_suspend);
-
 	INIT_WORK(&resume, mako_hotplug_resume);
 	INIT_WORK(&suspend, mako_hotplug_suspend);
 	INIT_DELAYED_WORK(&decide_hotplug, decide_hotplug_func);
 
-	queue_delayed_work_on(0, wq, &decide_hotplug, HZ * 20);
+	queue_delayed_work_on(0, wq, &decide_hotplug, HZ * 30);
 
-	cpufreq_register_notifier(&cpufreq_notifier,
-			CPUFREQ_POLICY_NOTIFIER);
-
+	register_early_suspend(&early_suspend);
 err:
 	return ret;
 }
@@ -657,7 +561,7 @@ static struct platform_device mako_hotplug_device = {
 static int mako_hotplug_remove(struct platform_device *pdev)
 {
 	destroy_workqueue(wq);
-
+	unregister_early_suspend(&early_suspend);
 	return 0;
 }
 
