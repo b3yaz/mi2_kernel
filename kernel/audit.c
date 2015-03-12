@@ -69,7 +69,7 @@
 #define AUDIT_DISABLED		-1
 #define AUDIT_UNINITIALIZED	0
 #define AUDIT_INITIALIZED	1
-static int	audit_initialized;
+static int	audit_initialized = AUDIT_DISABLED;
 
 #define AUDIT_OFF	0
 #define AUDIT_ON	1
@@ -996,17 +996,7 @@ static int __init audit_enable(char *str)
 	if (!audit_default)
 		audit_initialized = AUDIT_DISABLED;
 
-	printk(KERN_INFO "audit: %s", audit_default ? "enabled" : "disabled");
-
-	if (audit_initialized == AUDIT_INITIALIZED) {
-		audit_enabled = audit_default;
-		audit_ever_enabled |= !!audit_default;
-	} else if (audit_initialized == AUDIT_UNINITIALIZED) {
-		printk(" (after initialization)");
-	} else {
-		printk(" (until reboot)");
-	}
-	printk("\n");
+	pr_info("audit: %s\n", audit_default ? "enabled (after initialization)" : "disabled (until reboot)");
 
 	return 1;
 }
