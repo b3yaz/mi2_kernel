@@ -351,13 +351,14 @@ CHECK		= sparse
 # warnings and causes the build to stop upon encountering them.
 CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
 
+CC_OPTIMIZATIONS = -mtune=cortex-a15 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad -ftree-vectorize
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -mtune=cortex-a15 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad -ftree-vectorize
-AFLAGS_KERNEL	= -mtune=cortex-a15 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad -ftree-vectorize
+CFLAGS_KERNEL	= $(CC_OPTIMIZATIONS)
+AFLAGS_KERNEL	= $(CC_OPTIMIZATIONS)
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 
@@ -568,7 +569,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O3
+KBUILD_CFLAGS	+= -O2
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
